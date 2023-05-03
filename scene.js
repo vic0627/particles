@@ -1,33 +1,35 @@
 import * as THREE from "three";
+import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls";
-import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
-import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
-import { BokehPass } from "three/addons/postprocessing/BokehPass.js";
-import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer";
+import { RenderPass } from "three/addons/postprocessing/RenderPass";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass";
+import { BokehPass } from "three/addons/postprocessing/BokehPass";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass";
 
 const ww = window.innerWidth;
 const wh = window.innerHeight;
+const postprocessing = {};
 
 const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(75, ww / wh, 0.1, 1000);
+camera.position.set(0, 0, 3);
+camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById("canvas"),
   antialias: true,
   // alpha: true,
 });
+renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(ww, wh);
-
-const camera = new THREE.PerspectiveCamera(75, ww / wh, 0.001, 1000);
-camera.position.set(0, 0, 1);
-camera.lookAt(0, 0, 0);
+renderer.autoClear = false;
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.autoRotate = true;
 controls.enablePan = false;
-controls.maxDistance = 5;
-controls.minDistance = 1;
 controls.target.set(0, 0, 0);
+controls.update();
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.1);
 scene.add(ambientLight);
@@ -40,47 +42,47 @@ scene.add(directionalLight);
 // scene.add(axesHelper);
 
 const composer = new EffectComposer(renderer);
-composer.addPass(new RenderPass(scene, camera));
+const renderPass = new RenderPass(scene, camera);
 
-const depthTexture = new THREE.DepthTexture();
-depthTexture.type = THREE.UnsignedShortType;
-composer.renderTarget1.depthTexture = depthTexture;
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  1,
+  0.6,
+  0.8
+);
 
-const bokehPass = new BokehPass(scene, camera, {
-  focus: 1,
-  aperture: 0.01,
-  maxblur: 0.01,
-  width: ww,
-  height: wh,
-});
-composer.addPass(bokehPass);
+composer.addPass(renderPass);
+composer.addPass(bloomPass);
 
-const postprocessing = {};
-const effectController = {
-  focus: 500.0,
-  aperture: 5,
-  maxblur: 1.0,
-};
 postprocessing.composer = composer;
-postprocessing.bokeh = bokehPass;
-postprocessing.bokeh.uniforms["focus"].value = effectController.focus;
-postprocessing.bokeh.uniforms["aperture"].value =
-  effectController.aperture * 0.00001;
-postprocessing.bokeh.uniforms["maxblur"].value = effectController.maxblur;
+postprocessing.bloom = bloomPass;
 
-let number = 0;
+const effectController = {
+  focalLength: 35,
+  strength: postprocessing.bloom.strength,
+  threshold: postprocessing.bloom.threshold,
+  radius: postprocessing.bloom.radius,
+};
+
+const matChanger = () => {
+  camera.setFocalLength(effectController.focalLength);
+  postprocessing.bloom.strength = effectController.strength;
+  postprocessing.bloom.threshold = effectController.threshold;
+  postprocessing.bloom.radius = effectController.radius;
+};
+
+const gui = new GUI();
+gui.add(effectController, "focalLength", 16, 80, 0.001).onChange(matChanger);
+gui.add(effectController, "strength", 0, 20, 1).onChange(matChanger);
+gui.add(effectController, "threshold", 0, 1, 0.1).onChange(matChanger);
+gui.add(effectController, "radius", 0, 1, 0.1).onChange(matChanger);
+gui.close();
+
+matChanger();
 
 const animation = (animateCallback = function () {}) => {
+  // renderer.render(scene, camera);
   postprocessing.composer.render(0.1);
-
-  effectController.aperture = effectController.aperture - 0.01;
-  if (effectController.aperture < 0) {
-    effectController.aperture = 5;
-  }
-  postprocessing.bokeh.uniforms["focus"].value = effectController.focus;
-  postprocessing.bokeh.uniforms["aperture"].value =
-    effectController.aperture * 0.00001;
-  postprocessing.bokeh.uniforms["maxblur"].value = effectController.maxblur;
   camera.updateWorldMatrix();
   camera.updateProjectionMatrix();
   animateCallback();
@@ -88,8 +90,11 @@ const animation = (animateCallback = function () {}) => {
 };
 
 window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  const ww = window.innerWidth;
+  const wh = window.innerHeight;
+  camera.aspect = ww / wh;
+  postprocessing.composer.setSize(ww, wh);
+  renderer.setSize(ww, wh);
 });
 
-export { scene, renderer, camera, animation };
+export { scene, renderer, camera, animation, postprocessing };
