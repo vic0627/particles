@@ -19,14 +19,19 @@ const initBloom = {
 const ran = () => Math.random();
 let mov = () => {};
 let t = 0;
-const frame = 120;
+const frame = 60;
 
-const imageUrls = ["./shiba.jpg", "./fake.png", "./cartoon.jpg"];
+const imageUrls = [
+  "./particle_1.jpeg",
+  "./particle_2.jpeg",
+  "./particle_3.jpeg",
+  "./particle_4.jpeg",
+];
 const images = [];
 const imageDataArray = [];
 
 imageUrls.forEach((url, idx) => {
-  const targetAspectRatio = 16 / 9;
+  const targetAspectRatio = 3 / 4;
   const c = document.createElement("canvas");
   const ctx = c.getContext("2d");
   ctx.willReadFrequently = true;
@@ -46,13 +51,16 @@ imageUrls.forEach((url, idx) => {
 const createAttrs = (data, width, height, scaleFactor) => {
   const positions = [];
   const colors = [];
+  const positionsColor = [];
   let y = height / 2;
   for (let i = 0; i < data.length; i += 4) {
     const x = (i / 4) % width;
     const r = data[i] / 255;
     const g = data[i + 1] / 255;
     const b = data[i + 2] / 255;
-    colors.push(r, g, b);
+    const a = 1;
+    colors.push(r, g, b, a);
+    positionsColor.push(r, g, b);
     if (x === width - 1) y -= 1;
     const px = x / scaleFactor - width / scaleFactor / 2;
     const py = y / scaleFactor;
@@ -62,8 +70,14 @@ const createAttrs = (data, width, height, scaleFactor) => {
     new Float32Array(positions),
     3
   );
-  const colorAttribute = new THREE.BufferAttribute(new Float32Array(colors), 3);
-  return { positionAttribute, colorAttribute, positions, colors };
+  const colorAttribute = new THREE.BufferAttribute(new Float32Array(colors), 4);
+  return {
+    positionAttribute,
+    colorAttribute,
+    positions,
+    colors,
+    positionsColor,
+  };
 };
 const geometry = new THREE.BufferGeometry();
 const material = new THREE.PointsMaterial({
@@ -74,19 +88,28 @@ const points = new THREE.Points(geometry, material);
 scene.add(points);
 
 let idx = 0;
-setInterval(() => {
-  idx++;
-}, 8000);
-
-let newP = [];
+let idxCanUpdate = true;
+let newP = [],
+  newC = [];
 const pi = Math.PI / frame;
 animation(() => {
   if (imageDataArray.length > 0) {
+    if (t >= Math.PI / 2 && idxCanUpdate) {
+      idx += 1;
+      idxCanUpdate = false;
+    }
     if (idx === imageDataArray.length) idx = 0;
-    const { colorAttribute, colors, positions } = imageDataArray[idx];
+    const { positionsColor, positions, colors } = imageDataArray[idx];
     newP = positions.map((val, idx) => {
       if ((idx + 1) % 3 === 0) {
-        return val + Math.abs(colors[idx] * Math.sin(t) * 2);
+        return val + Math.abs(positionsColor[idx] * Math.sin(t) * 2);
+      } else {
+        return val;
+      }
+    });
+    newC = colors.map((val, idx) => {
+      if (idx % 4 === 3) {
+        return Math.sin(t);
       } else {
         return val;
       }
@@ -95,12 +118,16 @@ animation(() => {
       new Float32Array(newP),
       3
     );
+    const colorAttribute = new THREE.BufferAttribute(new Float32Array(newC), 4);
     geometry.setAttribute("position", positionAttribute);
     geometry.setAttribute("color", colorAttribute);
     t += pi;
+    if (t >= Math.PI) {
+      t = 0;
+      idxCanUpdate = true;
+    }
   }
 });
-
 
 // image.src = "./shiba.jpg";
 // image.onload = () => {
