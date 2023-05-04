@@ -3,39 +3,42 @@ import * as _T from "./scene.js";
 
 const { scene, renderer, camera, animation, postprocessing } = _T;
 
-const { bloom } = postprocessing;
+// const { bloom } = postprocessing;
 
 // const focus = bokeh.uniforms["focus"].value;
 // const aperture = bokeh.uniforms["aperture"].value;
 // const maxblur = bokeh.uniforms["maxblur"].value;
-let { strength, threshold, radius } = bloom;
+// let { strength, threshold, radius } = bloom;
 
-const initBloom = {
-  strength,
-  threshold,
-  radius,
-};
+// const initBloom = {
+//   strength,
+//   threshold,
+//   radius,
+// };
 
 const ran = () => Math.random();
 let mov = () => {};
 let t = 0;
 const frame = 60;
+const timeClip = Array.from({ length: frame }, (_, i) => i);
 
 const imageUrls = [
-  "./particle_1.jpeg",
-  "./particle_2.jpeg",
-  "./particle_3.jpeg",
-  "./particle_4.jpeg",
+  "./particle_1.png",
+  "./particle_2.png",
+  // "./particle_3.png",
+  "./particle_4.png",
 ];
-const images = [];
 const imageDataArray = [];
 
-imageUrls.forEach((url, idx) => {
-  const targetAspectRatio = 3 / 4;
+let imgInit = true;
+let aniInit = false;
+
+imageUrls.forEach((url, idx, arr) => {
+  const targetAspectRatio = 235 / 408;
   const c = document.createElement("canvas");
   const ctx = c.getContext("2d");
   ctx.willReadFrequently = true;
-  c.width = 600;
+  c.width = 297;
   c.height = c.width / targetAspectRatio;
   const image = new Image();
   image.src = url;
@@ -43,7 +46,8 @@ imageUrls.forEach((url, idx) => {
   image.onload = () => {
     ctx.drawImage(image, 0, 0, c.width, c.height);
     const imageData = ctx.getImageData(0, 0, c.width, c.height);
-    imageDataArray[idx] = createAttrs(imageData.data, c.width, c.height, 300);
+    imageDataArray[idx] = createAttrs(imageData.data, c.width, c.height, 200);
+    if (idx === arr.length - 1) imgInit = false;
   };
   c.remove();
 });
@@ -52,6 +56,7 @@ const createAttrs = (data, width, height, scaleFactor) => {
   const positions = [];
   const colors = [];
   const positionsColor = [];
+
   let y = height / 2;
   for (let i = 0; i < data.length; i += 4) {
     const x = (i / 4) % width;
@@ -66,11 +71,13 @@ const createAttrs = (data, width, height, scaleFactor) => {
     const py = y / scaleFactor;
     positions.push(px, py, 0);
   }
+
   const positionAttribute = new THREE.BufferAttribute(
     new Float32Array(positions),
     3
   );
   const colorAttribute = new THREE.BufferAttribute(new Float32Array(colors), 4);
+
   return {
     positionAttribute,
     colorAttribute,
@@ -83,162 +90,134 @@ const geometry = new THREE.BufferGeometry();
 const material = new THREE.PointsMaterial({
   size: 0.01,
   vertexColors: true,
+  transparent: true,
 });
 const points = new THREE.Points(geometry, material);
 scene.add(points);
 
-let idx = 0;
 let idxCanUpdate = true;
-let newP = [],
-  newC = [];
 const pi = Math.PI / frame;
+
+const createAnimation = (imageDataArray) => {
+  let positionClip = [],
+    colorClip = [];
+  let imgId = 0;
+  imageDataArray.forEach((_, IDX, IDA) => {
+    let time = 0;
+    positionClip[IDX] = [];
+    colorClip[IDX] = [];
+    timeClip.forEach((_, TCI, TCA) => {
+      if (time >= Math.PI / 2 && idxCanUpdate) {
+        imgId += 1;
+        idxCanUpdate = false;
+      }
+      if (imgId === IDA.length) imgId = 0;
+      const { positionsColor, positions, colors } = IDA[imgId];
+      const pc = positions.map((val, idx) => {
+        if ((idx + 1) % 3 === 0) {
+          return val + Math.abs(positionsColor[idx] * Math.sin(time) * 3);
+        } else {
+          return val;
+        }
+      });
+      const cc = colors.map((val, idx) => {
+        if (idx % 4 === 3) {
+          return Math.abs(Math.cos(time));
+        } else {
+          return val;
+        }
+      });
+      const positionAttribute = new THREE.BufferAttribute(
+        new Float32Array(pc),
+        3
+      );
+      const colorAttribute = new THREE.BufferAttribute(new Float32Array(cc), 4);
+
+      positionClip[IDX].push(positionAttribute);
+
+      colorClip[IDX].push(colorAttribute);
+      time += pi;
+      if (TCI === TCA.length - 1) {
+        time = 0;
+        idxCanUpdate = true;
+      }
+    });
+  });
+  return { positionClip, colorClip };
+};
+
+let mixer;
+let canPlay = false;
+let timeStamp = 0;
+let imageId = 0;
 animation(() => {
-  if (imageDataArray.length > 0) {
-    if (t >= Math.PI / 2 && idxCanUpdate) {
-      idx += 1;
-      idxCanUpdate = false;
-    }
-    if (idx === imageDataArray.length) idx = 0;
-    const { positionsColor, positions, colors } = imageDataArray[idx];
-    newP = positions.map((val, idx) => {
-      if ((idx + 1) % 3 === 0) {
-        return val + Math.abs(positionsColor[idx] * Math.sin(t) * 2);
-      } else {
-        return val;
-      }
-    });
-    newC = colors.map((val, idx) => {
-      if (idx % 4 === 3) {
-        return Math.sin(t);
-      } else {
-        return val;
-      }
-    });
-    const positionAttribute = new THREE.BufferAttribute(
-      new Float32Array(newP),
-      3
-    );
-    const colorAttribute = new THREE.BufferAttribute(new Float32Array(newC), 4);
+  if (imageDataArray.length === imageUrls.length && !aniInit && !imgInit) {
+    console.log("偷近來");
+    mixer = createAnimation(imageDataArray);
+    const { positionAttribute, colorAttribute } = imageDataArray[0];
     geometry.setAttribute("position", positionAttribute);
     geometry.setAttribute("color", colorAttribute);
-    t += pi;
-    if (t >= Math.PI) {
-      t = 0;
-      idxCanUpdate = true;
+    aniInit = true;
+  }
+  if (aniInit && canPlay) {
+    setPlay();
+  } else if (aniInit && !canPlay) {
+    if (timeStamp > frame - 1 || timeStamp < 0) return;
+    if (timeStamp < frame / 5 && timeStamp > 0) {
+      timeStamp--;
+      imageAnimate();
+    } else if (delta && timeStamp >= frame / 5) {
+      setPlay();
+    }
+    if (timeStamp > (frame / 5) * 4 && timeStamp < frame) {
+      timeStamp++;
+      if (timeStamp === frame) {
+        timeStamp = 0;
+        imageId += 1;
+        if (imageId === imageUrls.length) imageId = 0;
+      }
+      imageAnimate();
+    } else if (!delta && timeStamp <= (frame / 5) * 4) {
+      setPlay();
     }
   }
 });
 
-// image.src = "./shiba.jpg";
-// image.onload = () => {
-//   const { width, height } = image;
-//   c.width = width;
-//   c.height = height;
-//   ctx.drawImage(image, 0, 0);
-//   const imageData = ctx.getImageData(0, 0, width, height);
-//   const { data } = imageData;
+let delta = true;
+let timer;
+window.addEventListener("wheel", (e) => {
+  if (canPlay || !aniInit) return;
+  clearTimeout(timer);
+  canPlay = true;
+  e.deltaY > 0 ? (delta = true) : (delta = false);
+  timer = setTimeout(() => {
+    canPlay = false;
+    console.log("wheel end");
+  }, 100);
+});
 
-//   const positions = [];
-//   const colors = [];
-//   const curves = [];
+const shadowMask = document.getElementById("shadowMask");
+const frameBack = document.getElementById("frameBack");
+const setPlay = () => {
+  if (timeStamp >= frame) {
+    timeStamp = 0;
+    imageId += 1;
+  }
+  if (timeStamp < 0) {
+    timeStamp = frame - 1;
+    imageId -= 1;
+  }
+  if (imageId === imageUrls.length) imageId = 0;
+  if (imageId < 0) imageId = imageUrls.length - 1;
 
-//   const scaleFactor = 500;
-
-//   let y = height / 2;
-//   for (let i = 0; i < data.length; i += 4) {
-//     const x = (i / 4) % width;
-//     const r = data[i] / 255;
-//     const g = data[i + 1] / 255;
-//     const b = data[i + 2] / 255;
-//     colors.push(r, g, b);
-//     if (x === width - 1) y -= 1;
-//     const px = x / scaleFactor - width / scaleFactor / 2;
-//     const py = y / scaleFactor;
-//     positions.push(px, py, 0);
-//     // curves.push(curve({ x: px, y: py, z: 0 }));
-//   }
-
-//   const positionAttribute = new THREE.BufferAttribute(
-//     new Float32Array(positions),
-//     3
-//   );
-//   const colorAttribute = new THREE.BufferAttribute(new Float32Array(colors), 3);
-
-//   const geometry = new THREE.BufferGeometry();
-//   geometry.setAttribute("position", positionAttribute);
-//   geometry.setAttribute("color", colorAttribute);
-
-//   const material = new THREE.PointsMaterial({
-//     size: 0.005,
-//     vertexColors: true,
-//   });
-//   const points = new THREE.Points(geometry, material);
-//   scene.add(points);
-
-//   let newP = [];
-//   // let newC = colors.map((val) => val);
-//   // const pathC = colors.map((val) => 1 - val);
-//   const pi = Math.PI / frame;
-//   mov = () => {
-//     // const curvePoints = curves.map((val) =>
-//     //   val.getPointAt(Math.abs(Math.sin(t)))
-//     // );
-//     // newP.length = positions.length;
-//     // positions.map((_, idx) => {
-//     //   if (idx % 3 === 0) {
-//     //     const { x, y, z } = curvePoints[idx / 3];
-//     //     newP[idx] = x;
-//     //     newP[idx + 1] = y;
-//     //     newP[idx + 2] = z;
-//     //   }
-//     // });
-//     // if (t > 0.5 && t < 1) console.log(newP);
-//     newP = positions.map((val, idx) => {
-//       if ((idx + 1) % 3 === 0) {
-//         return val + Math.abs(colors[idx] * Math.sin(t) * 2);
-//       } else {
-//         return val;
-//       }
-//     });
-//     // newC = colors.map((val, idx) => val + pathC[idx] * Math.sin(t * 2));
-//     t += pi;
-//     // frameCount--;
-//     const positionAttribute = new THREE.BufferAttribute(
-//       new Float32Array(newP),
-//       3
-//     );
-//     // const colorAttribute = new THREE.BufferAttribute(new Float32Array(newC), 3);
-//     geometry.setAttribute("position", positionAttribute);
-//     // geometry.setAttribute("color", colorAttribute);
-//     // camera.setFocalLength(60 + 20 * Math.cos(t * 2));
-//     // strength = initBloom.strength + Math.cos(t * 2);
-//     // if (frameCount)
-//     // requestAnimationFrame(mov);
-//   };
-//   animation(mov);
-// };
-
-// const curve = (target) => {
-//   const { x, y, z } = target;
-//   let startPoint, controlPoint;
-//   const sp = 0.5 * ran()
-//   const cp = 0.5 * ran()
-//   if (x < 0 && y > 0) {
-//     startPoint = new THREE.Vector3(-sp, sp, 1);
-//     controlPoint = new THREE.Vector3(-cp, cp, 1);
-//   } else if (x > 0 && y < 0) {
-//     startPoint = new THREE.Vector3(sp, -sp, 1);
-//     controlPoint = new THREE.Vector3(cp, -cp, 1);
-//   } else if (x < 0 && y < 0) {
-//     startPoint = new THREE.Vector3(-sp, -sp, 1);
-//     controlPoint = new THREE.Vector3(-cp, -cp, 1);
-//   } else {
-//     startPoint = new THREE.Vector3(sp, sp, 1);
-//     controlPoint = new THREE.Vector3(cp, cp, 1);
-//   }
-//   return new THREE.CatmullRomCurve3([
-//     startPoint,
-//     controlPoint,
-//     new THREE.Vector3(x, y, z),
-//   ]);
-// };
+  imageAnimate();
+  delta ? timeStamp++ : timeStamp--;
+};
+const imageAnimate = () => {
+  shadowMask.style.opacity = Math.abs(Math.cos(timeStamp * pi));
+  frameBack.style.opacity = Math.abs(Math.sin(timeStamp * pi));
+  const { positionClip, colorClip } = mixer;
+  geometry.setAttribute("position", positionClip[imageId][timeStamp]);
+  geometry.setAttribute("color", colorClip[imageId][timeStamp]);
+  // console.log({ delta, imageId, timeStamp });
+};

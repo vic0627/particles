@@ -3,6 +3,64 @@
     padding: 0;
 }
 
-body{
+body {
     overflow: hidden;
+}
+
+.app {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    background: #141414;
+}
+
+.frame {
+    width: 575px;
+    height: 766.666666px;
+    position: absolute;
+    top: calc(50% - 385px);
+    left: calc(50% - 286px);
+    /* rotate: -0.deg; */
+}
+.frameBack{
+    width: 300px;
+    height: 522px;
+    position: absolute;
+    top: calc(50% - 260px);
+    left: calc(50% - 151px);
+    background: #fff5d2;
+    opacity: 0;
+}
+.frame>img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.9);
+}
+
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+}
+
+.shadowMask{
+    width: 300px;
+    height: 522px;
+    position: absolute;
+    top: calc(50% - 260px);
+    left: calc(50% - 151px);
+    backdrop-filter: saturate(80%) contrast(130%);
+}
+.shadowMask::after, .shadowMask::before {
+    content: "";
+    width: 100%;
+    height: 100%;
+    box-shadow: 10px 5px 10px 1px #0008 inset;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+.shadowMask::before {
+    box-shadow: -10px -5px 10px 1px #0008 inset;
 }
