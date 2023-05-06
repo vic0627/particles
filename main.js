@@ -25,12 +25,16 @@ const timeClip = Array.from({ length: frame }, (_, i) => i);
 const imageUrls = [
   "./particle_1.png",
   "./particle_2.png",
-  // "./particle_3.png",
+  "./particle_3.png",
   "./particle_4.png",
+  "./particle_5.png",
+  "./particle_6.png",
 ];
 const imageDataArray = [];
-
-let imgInit = true;
+const allImageCreated = [];
+imageUrls.forEach((_) => {
+  allImageCreated.push(false);
+});
 let aniInit = false;
 
 imageUrls.forEach((url, idx, arr) => {
@@ -38,7 +42,7 @@ imageUrls.forEach((url, idx, arr) => {
   const c = document.createElement("canvas");
   const ctx = c.getContext("2d");
   ctx.willReadFrequently = true;
-  c.width = 297;
+  c.width = 280;
   c.height = c.width / targetAspectRatio;
   const image = new Image();
   image.src = url;
@@ -47,7 +51,7 @@ imageUrls.forEach((url, idx, arr) => {
     ctx.drawImage(image, 0, 0, c.width, c.height);
     const imageData = ctx.getImageData(0, 0, c.width, c.height);
     imageDataArray[idx] = createAttrs(imageData.data, c.width, c.height, 200);
-    if (idx === arr.length - 1) imgInit = false;
+    allImageCreated[idx] = true;
   };
   c.remove();
 });
@@ -77,7 +81,6 @@ const createAttrs = (data, width, height, scaleFactor) => {
     3
   );
   const colorAttribute = new THREE.BufferAttribute(new Float32Array(colors), 4);
-
   return {
     positionAttribute,
     colorAttribute,
@@ -151,8 +154,11 @@ let canPlay = false;
 let timeStamp = 0;
 let imageId = 0;
 animation(() => {
-  if (imageDataArray.length === imageUrls.length && !aniInit && !imgInit) {
-    console.log("偷近來");
+  if (
+    imageDataArray.length === imageUrls.length &&
+    !aniInit &&
+    !allImageCreated.includes(false)
+  ) {
     mixer = createAnimation(imageDataArray);
     const { positionAttribute, colorAttribute } = imageDataArray[0];
     geometry.setAttribute("position", positionAttribute);
@@ -193,7 +199,7 @@ window.addEventListener("wheel", (e) => {
   timer = setTimeout(() => {
     canPlay = false;
     console.log("wheel end");
-  }, 100);
+  }, 150);
 });
 
 const shadowMask = document.getElementById("shadowMask");
