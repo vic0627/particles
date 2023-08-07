@@ -30,58 +30,15 @@ renderer.autoClear = false
 renderer.autoClearDepth = false
 renderer.setClearColor(0xffffff, 0)
 
-// const controls = new OrbitControls(camera, renderer.domElement);
-// controls.enablePan = false;
-// controls.target.set(0, 0, 0);
-// controls.update();
-
 const ambientLight = new THREE.AmbientLight(0xffffff, 1);
 scene.add(ambientLight);
-
-// const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-// directionalLight.position.set(0, 0, 50);
-// scene.add(directionalLight);
-
-// const axesHelper = new THREE.AxesHelper(5);
-// scene.add(axesHelper);
 
 const composer = new EffectComposer(renderer);
 const renderPass = new RenderPass(scene, camera);
 
-// const bloomPass = new UnrealBloomPass(
-//   new THREE.Vector2(ww, wh),
-//   1,
-//   0.6,
-//   0.8
-// );
-
 composer.addPass(renderPass);
 
 postprocessing.composer = composer;
-// postprocessing.bloom = bloomPass;
-
-// const effectController = {
-//   focalLength: 35,
-//   strength: postprocessing.bloom.strength,
-//   threshold: postprocessing.bloom.threshold,
-//   radius: postprocessing.bloom.radius,
-// };
-
-// const matChanger = () => {
-//   camera.setFocalLength(effectController.focalLength);
-//   postprocessing.bloom.strength = effectController.strength;
-//   postprocessing.bloom.threshold = effectController.threshold;
-//   postprocessing.bloom.radius = effectController.radius;
-// };
-
-// const gui = new GUI();
-// gui.add(effectController, "focalLength", 16, 80, 0.001).onChange(matChanger);
-// gui.add(effectController, "strength", 0, 20, 1).onChange(matChanger);
-// gui.add(effectController, "threshold", 0, 1, 0.1).onChange(matChanger);
-// gui.add(effectController, "radius", 0, 1, 0.1).onChange(matChanger);
-// gui.close();
-
-// matChanger();
 
 const animation = (animateCallback = function () {}) => {
   // renderer.render(scene, camera);
