@@ -1,7 +1,7 @@
 importScripts("https://unpkg.com/three@0.149.0/build/three.min.js");
 importScripts("https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js");
 
-const frame = 60;
+const frame = 30;
 const timeClip = Array.from({ length: frame }, (_, i) => i);
 
 let idxCanUpdate = true;
@@ -35,6 +35,8 @@ const createAttrs = (data, width, height, scaleFactor) => {
 };
 
 const createAnimation = (imageData, index) => {
+    const positionClip = [];
+    const colorClip = [];
     let time = 0;
 
     timeClip.forEach((val, TCI, TCA) => {
@@ -57,13 +59,10 @@ const createAnimation = (imageData, index) => {
             }
         });
 
-        const data = {
-            index,
-            positionAttr: pc,
-            colorAttr: cc,
-        };
+        positionClip.push(pc);
+        colorClip.push(cc);
 
-        postMessage(data);
+        postMessage({ positionClip: pc, colorClip: cc, index });
 
         time += pi;
 
@@ -72,6 +71,8 @@ const createAnimation = (imageData, index) => {
             idxCanUpdate = true;
         }
     });
+
+    return { positionClip, colorClip };
 };
 
 onmessage = function (e) {

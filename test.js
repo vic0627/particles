@@ -13,22 +13,22 @@ const imageUrls = [
     "./src/assets/particle_1.png",
     "./src/assets/particle_2.png",
     "./src/assets/particle_3.png",
-    "./src/assets/particle_4.png",
+    // "./src/assets/particle_4.png",
 ];
 const mixer = {
     positionClip: [],
     colorClip: [],
 };
 
-const frame = 60;
+const frame = 30;
 const pi = Math.PI / frame;
 let timeStamp = 0;
 let imageId = 0;
 let canPlay = false;
 /**
- * @type {-1 | 0 | 1}
+ * @type {0 | 1}
  */
-let delta = -1;
+let delta = 1;
 let timer;
 let geometry;
 let aniInit = false;
@@ -47,15 +47,11 @@ const newWorker = (message) => {
 
 const updateMixer = (e) => {
     if (!e.data) return workerDoneCount++;
-    const { index, positionAttr, colorAttr } = e.data;
+    const { index, positionClip, colorClip } = e.data;
     if (!mixer.positionClip[index]) mixer.positionClip[index] = [];
+    mixer.positionClip[index].push(positionClip);
     if (!mixer.colorClip[index]) mixer.colorClip[index] = [];
-    mixer.positionClip[index].push(
-        new THREE.BufferAttribute(new Float32Array(positionAttr), 3)
-    );
-    mixer.colorClip[index].push(
-        new THREE.BufferAttribute(new Float32Array(colorAttr), 4)
-    );
+    mixer.colorClip[index].push(colorClip);
 };
 
 const initGeo = () => {
@@ -74,8 +70,19 @@ const updateGeo = () => {
     if (!geometry) return;
     selectImg();
     const { positionClip, colorClip } = mixer;
-    const position = positionClip[imageId][timeStamp];
-    const color = colorClip[imageId][timeStamp];
+    let position = positionClip[imageId][timeStamp];
+    let color = colorClip[imageId][timeStamp];
+    // console.log("start instantiating BufferAttribute");
+    if (!(position instanceof THREE.BufferAttribute))
+        positionClip[imageId][timeStamp] = position = new THREE.BufferAttribute(
+            new Float32Array(position),
+            3
+        );
+    if (!(color instanceof THREE.BufferAttribute))
+        colorClip[imageId][timeStamp] = color = new THREE.BufferAttribute(
+            new Float32Array(color),
+            4
+        );
     geometry.setAttribute("position", position);
     geometry.setAttribute("color", color);
 };
@@ -83,14 +90,14 @@ const updateGeo = () => {
 const animationTrigger = () => {
     if (workerDoneCount !== imageUrls.length) return;
 
-    console.log("all inited", mixer);
-
     geometry = initGeo();
     updateGeo();
+
+    console.log("ready");
     animation(() => {
         if (!aniInit) aniInit = true;
-        if (!deltaBreak()) setPlay();
-        // else autoWheel();
+        if (canPlay) setPlay();
+        else autoWheel();
     });
 };
 
@@ -98,29 +105,34 @@ const shadowMask = document.getElementById("shadowMask");
 const frameBack = document.getElementById("frameBack");
 
 const autoWheel = () => {
-    if (timeStamp >= frame || timeStamp < 0) return;
+    console.log("autoWheel");
+    const wrongTS = timeStamp >= frame || timeStamp < 0;
+    const breakTS = timeStamp === 0 || timeStamp === frame - 1;
+    if (wrongTS || breakTS) return;
     const upLimit = timeStamp < frame / 5 && timeStamp > 0;
     const downLimit = timeStamp > (frame / 5) * 4 && timeStamp < frame;
-    if (delta && downLimit) {
-        delta = 0;
+    if (delta) {
+        if (downLimit) delta = 0;
+        else delta = 1;
         setPlay();
-    } else if (!delta && upLimit) {
-        delta = 1;
+    } else if (!delta) {
+        if (upLimit) delta = 1;
+        else delta = 0;
         setPlay();
     }
 };
 
 const setPlay = () => {
+    delta ? timeStamp++ : timeStamp--;
     if (timeStamp >= frame) timeStamp = 0;
     if (timeStamp < 0) timeStamp = frame - 1;
 
+    console.log("setPlay");
     imageAnimate();
-    delta ? timeStamp++ : timeStamp--;
 };
 
 const selectImg = () => {
-    if (timeStamp === frame / 2) imageId++;
-    else if (!timeStamp) imageId--;
+    if (timeStamp === frame / 2) delta ? imageId++ : imageId--;
     if (imageId === imageUrls.length) imageId = 0;
     if (imageId < 0) imageId = imageUrls.length - 1;
 };
@@ -160,9 +172,11 @@ imageUrls.forEach((url, idx, arr) => {
 window.addEventListener("wheel", (e) => {
     if (!aniInit) return;
     clearTimeout(timer);
+    canPlay = true;
     e.deltaY > 0 ? (delta = 1) : (delta = 0);
+    // console.log({ timeStamp, imageId });
     timer = setTimeout(() => {
-        delta = -1;
+        canPlay = false;
         console.log("wheel end");
     }, 100);
 });
