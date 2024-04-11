@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            http-equiv="X-UA-Compatible"
+            content="IE=edge"
+        />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+        />
+        <title>Document</title>
+        <script
+            async
+            src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"
+        ></script>
+        <script type="importmap">
+            {
+                "imports": {
+                    "three": "https://unpkg.com/three@0.149.0/build/three.module.js",
+                    "three/addons/": "https://unpkg.com/three@0.149.0/examples/jsm/"
+                }
+            }
+        </script>
+        <link
+            rel="stylesheet"
+            href="./src/assets/style.css"
+        />
+    </head>
+    <body>
+        <div class="app">
+            <div
+                class="frameBack"
+                id="frameBack"
+            ></div>
+            <div class="frame">
+                <img
+                    src="./src/assets/frame.png"
+                    alt="frame"
+                />
+            </div>
+            <canvas id="canvas"></canvas>
+            <div
+                class="shadowMask"
+                id="shadowMask"
+            ></div>
+        </div>
+        <!-- <script
+            type="module"
+            src="./main.js"
+        ></script> -->
+        <script
+            type="module"
+            src="./test.js"
+        ></script>
+    </body>
+</html>
