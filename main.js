@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import * as _T from "./scene.js";
+import * as _T from "./src/scene.js";
 
 const { scene, renderer, camera, animation, postprocessing } = _T;
 
@@ -7,10 +7,10 @@ const frame = 60;
 const timeClip = Array.from({ length: frame }, (_, i) => i);
 
 const imageUrls = [
-    "./particle_1.png",
-    "./particle_2.png",
-    // "./particle_3.png",
-    "./particle_4.png",
+    "./src/assets/particle_1.png",
+    "./src/assets/particle_2.png",
+    "./src/assets/particle_3.png",
+    "./src/assets/particle_4.png",
 ];
 const imageDataArray = [];
 
