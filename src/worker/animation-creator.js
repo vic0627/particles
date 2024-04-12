@@ -1,15 +1,24 @@
-importScripts("https://unpkg.com/three@0.149.0/build/three.min.js");
-importScripts("https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js");
+// importScripts("https://unpkg.com/three@0.149.0/build/three.min.js");
+// importScripts("https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js");
 
-const frame = 30;
-const timeClip = Array.from({ length: frame }, (_, i) => i);
-
-let idxCanUpdate = true;
+const frame = 60;
+const timeClip = Array.from({ length: frame / 2 }, (_, i) => i);
 const pi = Math.PI / frame;
 
+/**
+ *
+ * @param {Uint8ClampedArray} data
+ * @param {number} width
+ * @param {number} height
+ * @param {number} scaleFactor
+ * @returns
+ */
 const createAttrs = (data, width, height, scaleFactor) => {
+    /** @type {number[]} */
     const positions = [];
+    /** @type {number[]} */
     const colors = [];
+    /** @type {number[]} */
     const positionsColor = [];
 
     let y = height / 2;
@@ -35,44 +44,24 @@ const createAttrs = (data, width, height, scaleFactor) => {
 };
 
 const createAnimation = (imageData, index) => {
-    const positionClip = [];
-    const colorClip = [];
     let time = 0;
 
-    timeClip.forEach((val, TCI, TCA) => {
-        if (time >= Math.PI / 2 && idxCanUpdate) {
-            idxCanUpdate = false;
-        }
+    timeClip.forEach((_, TCI, TCA) => {
         const { positionsColor, positions, colors } = imageData;
-        const pc = positions.map((val, idx) => {
-            if ((idx + 1) % 3 === 0) {
-                return val + Math.abs(positionsColor[idx] * Math.sin(time) * 3);
-            } else {
-                return val;
-            }
-        });
-        const cc = colors.map((val, idx) => {
-            if (idx % 4 === 3) {
-                return Math.abs(Math.cos(time));
-            } else {
-                return val;
-            }
-        });
+        const positionClip = positions.map((val, idx) =>
+            (idx + 1) % 3 === 0
+                ? val + Math.abs(positionsColor[idx] * Math.sin(time) * 3)
+                : val
+        );
+        const colorClip = colors.map((val, idx) =>
+            idx % 4 === 3 ? Math.abs(Math.cos(time)) : val
+        );
 
-        positionClip.push(pc);
-        colorClip.push(cc);
-
-        postMessage({ positionClip: pc, colorClip: cc, index });
+        postMessage({ positionClip, colorClip, index });
 
         time += pi;
-
-        if (TCI === TCA.length - 1) {
-            time = 0;
-            idxCanUpdate = true;
-        }
+        if (TCI === TCA.length - 1) time = 0;
     });
-
-    return { positionClip, colorClip };
 };
 
 onmessage = function (e) {
