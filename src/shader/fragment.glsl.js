@@ -12,7 +12,7 @@ void main() {
     vec4 vt = texture2D(vTexture, vUv);
     bool innerRange = vUv.x > 0.2 && vUv.x < 0.8 && vUv.y > 0.15 && vUv.y < 0.85;
     if (vt.w == 0.0 && innerRange) {
-        float framePercentage = vFrameTime / HALF_FRAME;
+        float framePercentage = vFrameTime / (HALF_FRAME * 2.0);
         vt = vec4(vec3(framePercentage), 1.0 - framePercentage);
     }
     gl_FragColor = vt;

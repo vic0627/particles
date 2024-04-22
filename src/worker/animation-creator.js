@@ -129,9 +129,9 @@ const createAnimation = (imageData, index) => {
     // const totalLength = positions.length / 3;
 
     timeClip.forEach((_, tci, tca) => {
-        const positionClip = [];
-        let tmpPt = [];
-        let tmpClr = [];
+        // const positionClip = [];
+        // let tmpPt = [];
+        // let tmpClr = [];
         // const tmpTime = new Map();
         // const snapshot = tci === tca.length - 10;
         // const clipPercentage = threshold((tci + 1) / tca.length);
@@ -146,35 +146,37 @@ const createAnimation = (imageData, index) => {
         // const allowCol = (val) => allowRange(w, val);
         // const allowRow = (val) => allowRange(h, val);
         // const allowRange = (val) => val <= clipPercentage * totalLength;
+        // positions.forEach((p, i) => {
+        //     const c = positionsColor[i];
+        //     if (!(i % 3)) {
+        //         tmpPt = [p];
+        //         tmpClr = [c];
+        //     } else {
+        //         tmpPt.push(p);
+        //         tmpClr.push(c);
+        //     }
+        //     if (tmpPt.length === 3) {
+        //         const id = (i + 1) / 3;
+        //         const col = id % w;
+        //         const row = 1 + parseInt(id / w);
+        //         const notAllowed = !allowCol(col) && !allowRow(row);
+        //         const notAllowed = !allowRange(id);
+        //         if (notAllowed) return positionClip.push(...tmpPt);
+        //         const time =
+        //             typeof tmpTime[id] === "number"
+        //                 ? (tmpTime[id] += pi)
+        //                 : (tmpTime[id] = 0);
+        //         const [P1, P2] = createControlPoint(tmpPt, tmpClr);
+        //         const travelP = cubicBezier(tmpPt, P1, P2, time);
+        //         positionClip.push(...travelP);
+        //     }
+        // });
 
-        positions.forEach((p, i) => {
-            const c = positionsColor[i];
-
-            if (!(i % 3)) {
-                tmpPt = [p];
-                tmpClr = [c];
-            } else {
-                tmpPt.push(p);
-                tmpClr.push(c);
-            }
-
-            if (tmpPt.length === 3) {
-                // const id = (i + 1) / 3;
-                // const col = id % w;
-                // const row = 1 + parseInt(id / w);
-                // const notAllowed = !allowCol(col) && !allowRow(row);
-                // const notAllowed = !allowRange(id);
-                // if (notAllowed) return positionClip.push(...tmpPt);
-
-                // const time =
-                //     typeof tmpTime[id] === "number"
-                //         ? (tmpTime[id] += pi)
-                //         : (tmpTime[id] = 0);
-                const [P1, P2] = createControlPoint(tmpPt, tmpClr);
-                const travelP = cubicBezier(tmpPt, P1, P2, time);
-                positionClip.push(...travelP);
-            }
-        });
+        const positionClip = positions.map((val, idx) =>
+            (idx + 1) % 3 === 0
+                ? val + Math.abs(positionsColor[idx] * Math.sin(time) * 3)
+                : val
+        );
 
         const colorClip = colors.map((val, idx) =>
             idx % 4 === 3 ? Math.abs(Math.cos(time)) : val

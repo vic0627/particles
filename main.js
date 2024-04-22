@@ -107,6 +107,12 @@ const updateBackImage = () => {
     tmpImgId = imageId;
 };
 
+const updateFov = (time) => {
+    const dynamicRange = 20;
+    const dynamicFov = (time / (halfFrame - 1)) * dynamicRange;
+    camera.fov = 75 + dynamicFov;
+};
+
 const updateGeo = () => {
     if (!geometry) return;
     selectImg();
@@ -117,6 +123,7 @@ const updateGeo = () => {
             ? Math.abs(halfFrame - timeStamp + halfFrame)
             : timeStamp;
     shaderMaterial.uniforms.vFrameTime.value = correctTime;
+    updateFov(correctTime);
     //   console.log({ imageId, correctTime });
     let position = positionClip[imageId][correctTime];
     let color = colorClip[imageId][correctTime];
