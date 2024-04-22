@@ -13,7 +13,7 @@ const wh = window.innerHeight;
 const postprocessing = {};
 
 const scene = new THREE.Scene();
-const axesHelper = new THREE.AxesHelper(5);
+// const axesHelper = new THREE.AxesHelper(5);
 // scene.add(axesHelper);
 
 const camera = new THREE.PerspectiveCamera(75, ww / wh, 0.1, 1000);
@@ -21,9 +21,9 @@ camera.position.set(0, 0, 3);
 camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer({
-  canvas: document.getElementById("canvas"),
-  antialias: true,
-  alpha: true,
+    canvas: document.getElementById("canvas"),
+    antialias: true,
+    alpha: true,
 });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(ww, wh);
@@ -46,32 +46,21 @@ scene.add(ambientLight);
 // controls.update();
 
 const animation = (animateCallback = function () {}) => {
-  renderer.render(scene, camera);
-  // postprocessing.composer.render(0.1);
-  // controls.update();
-  camera.updateWorldMatrix();
-  camera.updateProjectionMatrix();
-  animateCallback();
-  requestAnimationFrame(() => animation(animateCallback));
+    renderer.render(scene, camera);
+    // postprocessing.composer.render(0.1);
+    // controls.update();
+    camera.updateWorldMatrix();
+    camera.updateProjectionMatrix();
+    animateCallback();
+    requestAnimationFrame(() => animation(animateCallback));
 };
 
 window.addEventListener("resize", () => {
-  const ww = window.innerWidth;
-  const wh = window.innerHeight;
-  camera.aspect = ww / wh;
-  // postprocessing.composer.setSize(ww, wh);
-  renderer.setSize(ww, wh);
-});
-
-const moveLimit = 1;
-window.addEventListener("mousemove", (e) => {
-  const ww = window.innerWidth;
-  const wh = window.innerHeight;
-  const x = ((e.clientX - ww / 2) / ww) * 2 * moveLimit;
-  const y = ((e.clientY - wh / 2) / wh) * 2 * moveLimit;
-
-  camera.position.set(-x, y, 3);
-  camera.lookAt(0, 0, 0);
+    const ww = window.innerWidth;
+    const wh = window.innerHeight;
+    camera.aspect = ww / wh;
+    // postprocessing.composer.setSize(ww, wh);
+    renderer.setSize(ww, wh);
 });
 
 export { scene, renderer, camera, animation, postprocessing };

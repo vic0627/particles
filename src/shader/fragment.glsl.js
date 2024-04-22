@@ -13,7 +13,7 @@ void main() {
     bool innerRange = vUv.x > 0.2 && vUv.x < 0.8 && vUv.y > 0.15 && vUv.y < 0.85;
     if (vt.w == 0.0 && innerRange) {
         float framePercentage = vFrameTime / HALF_FRAME;
-        vt = vec4(vec3(framePercentage), 1.0);
+        vt = vec4(vec3(framePercentage), 1.0 - framePercentage);
     }
     gl_FragColor = vt;
 }
